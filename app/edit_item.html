@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Editar Item - Mini CRUD Selenium</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="page-container">
+    <div class="page-header-line"></div>
+
+    <div class="cyber-badge">Editor · ITEM DETAIL</div>
+    <h1>Editar item</h1>
+
+    <p>
+      <a href="items.html">Volver al listado</a>
+    </p>
+
+    <div id="flashContainer"></div>
+
+    <form id="editForm">
+      <div>
+        <label for="name">Nombre</label>
+        <input type="text" id="name" name="name">
+      </div>
+
+      <div>
+        <label for="description">Descripción</label>
+        <textarea id="description" name="description"></textarea>
+      </div>
+
+      <button type="submit" id="btnSave">Guardar cambios</button>
+    </form>
+
+    <div class="validation-error" id="editError" style="display:none;"></div>
+  </div>
+
+  <script>
+    function ensureLoggedIn() {
+      const logged = localStorage.getItem("loggedIn");
+      if (logged !== "true") {
+        window.location.href = "login.html";
+      }
+    }
+
+    function loadItems() {
+      const data = localStorage.getItem("items");
+      if (!data) return [];
+      try {
+        return JSON.parse(data);
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function saveItems(items) {
+      localStorage.setItem("items", JSON.stringify(items));
+    }
+
+    function showFlashMessageIfNeeded() {
+      const msg = localStorage.getItem("flashMessage");
+      if (msg) {
+        const cont = document.getElementById("flashContainer");
+        cont.innerHTML = '<div class="flash-message">' + msg + '</div>';
+        localStorage.removeItem("flashMessage");
+      }
+    }
+
+    function getItemIdFromQuery() {
+      const params = new URLSearchParams(window.location.search);
+      const idStr = params.get("id");
+      if (!idStr) return null;
+      const id = parseInt(idStr, 10);
+      return isNaN(id) ? null : id;
+    }
+
+    let currentItemId = null;
+
+    function loadItemIntoForm() {
+      const id = getItemIdFromQuery();
+      currentItemId = id;
+      const items = loadItems();
+      const item = items.find(i => i.id === id);
+
+      if (!item) {
+        localStorage.setItem("flashMessage", "El registro no existe.");
+        window.location.href = "items.html";
+        return;
+      }
+
+      document.getElementById("name").value = item.name;
+      document.getElementById("description").value = item.description || "";
+    }
+
+    function handleEditSubmit(event) {
+      event.preventDefault();
+
+      const nameInput = document.getElementById("name");
+      const descInput = document.getElementById("description");
+      const errorDiv = document.getElementById("editError");
+
+      const name = nameInput.value.trim();
+      const description = descInput.value.trim();
+
+      errorDiv.style.display = "none";
+      errorDiv.textContent = "";
+
+      if (!name) {
+        errorDiv.textContent = "El nombre es obligatorio.";
+        errorDiv.style.display = "block";
+        return;
+      }
+
+      if (name.length > 50) {
+        errorDiv.textContent = "El nombre no puede exceder 50 caracteres.";
+        errorDiv.style.display = "block";
+        return;
+      }
+
+      const items = loadItems();
+      const item = items.find(i => i.id === currentItemId);
+
+      if (!item) {
+        localStorage.setItem("flashMessage", "El registro no existe.");
+        window.location.href = "items.html";
+        return;
+      }
+
+      item.name = name;
+      item.description = description;
+      saveItems(items);
+
+      localStorage.setItem("flashMessage", "Registro actualizado correctamente.");
+      window.location.href = "items.html";
+    }
+
+    ensureLoggedIn();
+    showFlashMessageIfNeeded();
+    loadItemIntoForm();
+
+    document.getElementById("editForm").addEventListener("submit", handleEditSubmit);
+  </script>
+
+</body>
+</html>
